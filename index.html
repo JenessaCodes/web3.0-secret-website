@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet" />
+      </head>
+      
+      <body class="h-full">
+        <div class="
+            flex
+            w-full
+            mt-40
+            mb-10
+            justify-center
+            content-center
+            items-center
+            space-x-4
+          ">
+          <div class="flex flex-col space-y-6">
+            <h3 class="text-center">Login with Metamask to Check Membership Access</h3>
+            <div class="flex flex-col space-y-2">
+              <button onclick="loginWithEth()" class="
+                  rounded
+                  bg-white
+                  border border-gray-400
+                  hover:bg-gray-100
+                  py-2
+                  px-4
+                  text-gray-600
+                  hover:text-gray-700
+                ">
+                Login & Save ETH Address
+              </button>
+              <p id="userAddress" class="text-gray-600"></p>
+              <button id="logoutButton" onclick="logout()" class="hidden text-blue-500 underline">
+                Logout
+              </button>
+              <input id="textField" type="text" class="
+              rounded
+              bg-white
+              border border-gray-400
+              hover:bg-gray-100
+              py-2
+              px-4
+              text-gray-600
+              hover:text-gray-700
+            " onchange="addTestTokenId()" placeholder="Test with a [token_id] from an NFT you own!">
+            </div>
+          </div>
+        </div>
+      
+        <div class='w-full flex justify-center'>
+          <div id='secretWebsite' class="w-1/2 grid grid-cols-4 gap-2">
+            <!-- Secret Website -->
+          </div>
+        </div>
+      
+        <script>
+          window.userAddress = null;
+          let testTokenId=0;
+          window.onload = async () => {
+            // Init Web3 connected to ETH network
+            if (!window.ethereum) {
+              alert("No ETH brower extension detected.");
+            }
+      
+            // Load in Localstore key
+            window.userAddress = window.localStorage.getItem("userAddress");
+            showAuthMessage();
+          };
+      
+          // Display or remove the authorization results
+          function showAuthMessage() {
+            if (!window.userAddress) {
+              document.getElementById("userAddress").innerText = "";
+              document.getElementById("logoutButton").classList.add("hidden");
+              return false;
+            }
+      
+            document.getElementById(
+              "userAddress"
+            ).innerText = `Success, you are authorized!`;
+            document.getElementById("logoutButton").classList.remove("hidden");
+          }
+      
+          // remove stored user address and reset frontend
+          function logout() {
+            window.userAddress = null;
+            window.localStorage.removeItem("userAddress");
+            showAuthMessage();
+            document.getElementById("textField").value="";
+            document.getElementById("secretWebsite").innerHTML="";
+          }
+    
+          function addTestTokenId() {
+            testTokenId = document.getElementById("textField").value
+          }
+      
+          // Login with Web3 via Metamasks window.ethereum library
+          async function loginWithEth() {
+            if (window.ethereum) {
+              try {
+                // We use this since ethereum.enable() is deprecated. This method is not
+                // available in Web3JS - so we call it directly from metamasks' library
+                const selectedAccount = await window.ethereum
+                  .request({
+                    method: "eth_requestAccounts",
+                  })
+                  .then((accounts) => accounts[0])
+                  .catch(() => {
+                    throw Error("No account selected!");
+                  });
+                window.userAddress = selectedAccount;
+                window.localStorage.setItem("userAddress", selectedAccount);
+                showAuthMessage();
+                checkIfAccountHoldsNFTOnOpensea();
+              } catch (error) {
+                console.error(error);
+              }
+            } else {
+              alert("No ETH browser extension detected.");
+            }
+          }
+      
+          async function checkIfAccountHoldsNFTOnOpensea() {
+            if (!window.userAddress) { return }
+            const osContainer = document.getElementById('secretWebsite')
+      
+            const items = await fetch(`https://testnets-api.opensea.io/api/v1/assets?owner=${window.userAddress}&order_direction=desc&offset=0&limit=50`)
+              .then((res) => res.json())
+              .then((res) => {
+                return res.assets
+              })
+              .catch((e) => {
+                console.error(e)
+                console.error('Could not talk to OpenSea')
+                return null
+              })
+      
+            if (items.length === 0) { return }
+    
+            let match;
+      
+            items.forEach((nft) => {
+              const { token_id } = nft
+    
+              if (token_id=="55895710559654644194481668966657421436809280178919292083285838403757427130369"||token_id==testTokenId) {
+                match = true;
+              }
+        
+            })
+    
+            if (match==true) {
+              const newElement = document.createElement('div')
+              newElement.innerHTML = `
+                <!-- Access to Exclusive Website-->
+        
+                    <div class='flex-col w-full space-y-1'>
+                      <p class='text-gray-800 text-lg'>Welcome to the secret site for Web 3.0 Pros! </p> 
+                    </div>
+              `
+              osContainer.appendChild(newElement)
+            }
+            else {
+              document.getElementById("userAddress").innerText = "You are not authorized to enter. (If testing, click login button to try again)";
+            }
+          }
+        </script>
+      </body>
+</html>
+
+
+  <!-- 
+    Design:
+
+    Mock business mints a special NFT with unique token_id = e.g "55895710559654644194481668966657421436809280178919292083285838403757427130369"
+
+    NFT can be sold to anyone and give them access to the business's secret site.
+
+    The website address is public and anyone can login with their Eth wallet.
+
+    Only the current owner of the special NFT can then be permitted into the secret website.
+
+    Problem: Business must mint or transfer the speacial NFT on the Opensea marketplace. 
+    Thus, every new owner of the NFT must have an opensea account and list the special NFT item on their account.
+
+  -->
